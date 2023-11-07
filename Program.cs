@@ -38,7 +38,7 @@ namespace NugetUpdate
             //解析传入的参数
             Console.WriteLine("开始更新Nuget包");
             string dir = ".";
-            string outDir = "./v";
+            string outDir = ".";
             string source = "http://192.168.21.45:8080/v3/index.json";
             string name = "";
             bool isNeedDependency = false;
@@ -162,11 +162,11 @@ namespace NugetUpdate
             return outDir;
         }
 
-        private static bool DownloadDirsFile(string dir, string source, string tempOutDir,List<string> dllNames)
+        private static bool DownloadDirsFileAsync(string dir, string source, string tempOutDir,List<string> dllNames)
         {
             List<Task<bool>> tasks = new List<Task<bool>>();
             string[] files = System.IO.Directory.GetFiles(dir, "*.dll");
-
+            
             foreach (var file in files)
             {
               
@@ -183,7 +183,27 @@ namespace NugetUpdate
             Task.WaitAll(tasks.ToArray());
             return tasks.ToArray().All(t => t.Result);
         }
+        private static bool DownloadDirsFile(string dir, string source, string tempOutDir, List<string> dllNames)
+        {
+            List<bool> tasks = new List<bool>();
+            string[] files = System.IO.Directory.GetFiles(dir, "*.dll");
 
+            foreach (var file in files)
+            {
+
+                //获取文件名称
+                string fileName = System.IO.Path.GetFileName(file);
+                //获取包名称
+                FileInfo fileInfo = new FileInfo(file);
+                string packetName = fileInfo.Name.Replace(fileInfo.Extension, ""); dllNames.Add(packetName);
+                //下载包
+
+             bool t =  DownloadPackage(packetName, tempOutDir, source);
+                tasks.Add(t);
+            }
+           // Task.WaitAll(tasks.ToArray());
+            return tasks.ToArray().All(t => t);
+        }
         private static bool DownloadPackage(string packetName, string outDir = ".", string nugetServerUrl = "http://192.168.21.45:8080/v3/index.json")
         {
 
