@@ -14,6 +14,7 @@ namespace NugetUpdate
         // -source 参数为nuget服务器地址
         // -name 参数为包名称
         //-help,-?,-h 参数为帮助
+        //-NeedDependency 是否需要下载依赖性 默认值为false 
         public static void Main(string[] args)
         {//判断是否需要打印帮助信息
             if (args.Length == 1 && (args[0] == "-help" || args[0] == "-?" || args[0] == "-h"))
@@ -24,20 +25,24 @@ namespace NugetUpdate
                 Console.WriteLine("-source 参数为nuget服务器地址");
                 Console.WriteLine("-name 参数为包名称");
                 Console.WriteLine("-help,-?,-h 参数为帮助");
+                Console.WriteLine("-NeedDependency 是否需要下载依赖性 默认值为false ");
                 Console.WriteLine("示例:");
                 Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o");
                 Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json");
                 Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json -source http://192.168.21.45:8080/v3/index.json");
-                Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o -source http://192.168.21.45:8080/v3/index.json");
+                Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o -source http://192.168.21.45:8080/v3/index.json -needDependency false");
+
                 return;
             }
 
             //解析传入的参数
             Console.WriteLine("开始更新Nuget包");
             string dir = ".";
-            string outDir = ".";
+            string outDir = "./v";
             string source = "http://192.168.21.45:8080/v3/index.json";
             string name = "";
+            bool isNeedDependency = false;
+            List<string> dllNames = new List<string>();
             Guid guid = Guid.NewGuid();
             string tempOutDir = Path.Combine(Path.GetTempPath(), "updateNuget", guid.ToString());
             for (int i = 0; i < args.Length; i++)
@@ -58,16 +63,21 @@ namespace NugetUpdate
                 {
                     name = args[i + 1];
                 }
+                if (args[i].ToLower() == "-needdependency")
+                {
+                    isNeedDependency = bool.Parse(args[i + 1]);
+                }
+
             }
             //没有输入包名称
             if (string.IsNullOrEmpty(name))
-            {//要下载的文件夹为空
+            {
+                //要下载的文件夹为空
                 if (string.IsNullOrEmpty(dir))
                 {
                     Console.WriteLine("请输入要下载的包名称");
                     name = Console.ReadLine();
-                    DownloadPackage(name);
-
+                    DownloadPackage(name, outDir, source);
                     return;
                 }
                 else
@@ -83,8 +93,9 @@ namespace NugetUpdate
                     }
 
                     //获取文件夹下所有dll文件
-                    if (!DownloadDirsFile(dir, source, tempOutDir))
+                    if (!DownloadDirsFile(dir, source, tempOutDir, dllNames))
                     {
+                        Console.WriteLine("下载失败,按Enter继续");
                         Console.ReadLine();
                     }
                 }
@@ -93,11 +104,39 @@ namespace NugetUpdate
             {
                 //下载包
                 DownloadPackage(name, tempOutDir, source);
+                dllNames.Add(name);
             }
+            outDir = CopyFile(outDir, isNeedDependency, dllNames, tempOutDir);
+            Console.WriteLine("更新完成");
+            //Console.ReadLine();
+        }
+
+        private static string CopyFile(string outDir, bool isNeedDependency, List<string> dllNames, string tempOutDir)
+        {
             //将下载的包移动到指定文件夹
             string[] tempFiles1 = System.IO.Directory.GetFiles(tempOutDir, "*.dll", SearchOption.AllDirectories);
             string[] tempFiles2 = System.IO.Directory.GetFiles(tempOutDir, "*.xml", SearchOption.AllDirectories);
             string[] tempFiles = tempFiles1.Union(tempFiles2).ToArray();
+            List<string> tempFileList = new List<string>();
+            //如果needDependency为false,则不复制依赖项,否则复制所有依赖项
+            if (!isNeedDependency)
+            {
+                foreach (var item in tempFiles)
+                {
+                    foreach (var dllName in dllNames)
+                    {
+                        if (item.Contains(dllName))
+                        {
+                            tempFileList.Add(item);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                tempFileList= tempFiles.ToList();
+            }
+
             //如果输出文件夹包含".",将"."替换为当前目录
             if (outDir.StartsWith("."))
             {
@@ -109,7 +148,7 @@ namespace NugetUpdate
                 System.IO.Directory.CreateDirectory(outDir);
             }
             //查找所有的dll以及xml
-            foreach (var file in tempFiles)
+            foreach (var file in tempFileList)
             {
                 FileInfo fileInfo = new FileInfo(file);
                 //移动文件
@@ -119,22 +158,23 @@ namespace NugetUpdate
                 Console.WriteLine("移动文件:" + fileName + "到目标文件夹:" + destFile);
 
             }
-            Console.WriteLine("更新完成");
-            //Console.ReadLine();
+
+            return outDir;
         }
 
-        private static bool DownloadDirsFile(string dir, string source, string tempOutDir)
+        private static bool DownloadDirsFile(string dir, string source, string tempOutDir,List<string> dllNames)
         {
             List<Task<bool>> tasks = new List<Task<bool>>();
             string[] files = System.IO.Directory.GetFiles(dir, "*.dll");
+
             foreach (var file in files)
             {
-
+              
                 //获取文件名称
                 string fileName = System.IO.Path.GetFileName(file);
                 //获取包名称
                 FileInfo fileInfo = new FileInfo(file);
-                string packetName = fileInfo.Name.Replace(fileInfo.Extension, "");
+                string packetName = fileInfo.Name.Replace(fileInfo.Extension, "");  dllNames.Add(packetName);
                 //下载包
 
                 Task<bool> t = Task.Run(() => DownloadPackage(packetName, tempOutDir, source));
