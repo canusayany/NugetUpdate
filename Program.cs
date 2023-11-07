@@ -28,6 +28,7 @@ namespace NugetUpdate
                 Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o");
                 Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json");
                 Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json -source http://192.168.21.45:8080/v3/index.json");
+                Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o -source http://192.168.21.45:8080/v3/index.json");
                 return;
             }
 
