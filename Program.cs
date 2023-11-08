@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace NugetUpdate
@@ -16,7 +17,19 @@ namespace NugetUpdate
         //-help,-?,-h 参数为帮助
         //-NeedDependency 是否需要下载依赖性 默认值为false 
         public static void Main(string[] args)
-        {//判断是否需要打印帮助信息
+        {
+            //查找电脑环境变量文件夹是否有nuget.exe
+            string nugetExePath = "";
+            nugetExePath = CheckHaveNugetexe(nugetExePath);
+            //如果nugetExePath==""，则提示没有找到nuget.exe
+            if (nugetExePath == "")
+            {
+                Console.WriteLine("没有找到nuget.exe,请下载https://dist.nuget.org/win-x86-commandline/latest/nuget.exe,放入运行目录或者环境变量path");
+                Console.ReadLine();
+                return;
+            }
+
+            //判断是否需要打印帮助信息
             if (args.Length == 1 && (args[0] == "-help" || args[0] == "-?" || args[0] == "-h"))
             {
                 Console.WriteLine("参数说明:");
@@ -111,6 +124,33 @@ namespace NugetUpdate
             //Console.ReadLine();
         }
 
+        private static string CheckHaveNugetexe(string nugetExePath)
+        {
+            string nugetPath = Environment.GetEnvironmentVariable("PATH");
+            string[] paths = nugetPath.Split(';');
+
+            foreach (var path in paths)
+            {
+                string exePath = Path.Combine(path, "nuget.exe");
+                if (File.Exists(exePath))
+                {
+                    nugetExePath = exePath;
+                    break;
+                }
+            }
+            //查找当前运行目录下是否有nuget.exe
+            if (nugetExePath == "")
+            {
+                string exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nuget.exe");
+                if (File.Exists(exePath))
+                {
+                    nugetExePath = exePath;
+                }
+            }
+
+            return nugetExePath;
+        }
+
         private static string CopyFile(string outDir, bool isNeedDependency, List<string> dllNames, string tempOutDir)
         {
             //将下载的包移动到指定文件夹
@@ -134,7 +174,7 @@ namespace NugetUpdate
             }
             else
             {
-                tempFileList= tempFiles.ToList();
+                tempFileList = tempFiles.ToList();
             }
 
             //如果输出文件夹包含".",将"."替换为当前目录
@@ -162,19 +202,19 @@ namespace NugetUpdate
             return outDir;
         }
 
-        private static bool DownloadDirsFileAsync(string dir, string source, string tempOutDir,List<string> dllNames)
+        private static bool DownloadDirsFileAsync(string dir, string source, string tempOutDir, List<string> dllNames)
         {
             List<Task<bool>> tasks = new List<Task<bool>>();
             string[] files = System.IO.Directory.GetFiles(dir, "*.dll");
-            
+
             foreach (var file in files)
             {
-              
+
                 //获取文件名称
                 string fileName = System.IO.Path.GetFileName(file);
                 //获取包名称
                 FileInfo fileInfo = new FileInfo(file);
-                string packetName = fileInfo.Name.Replace(fileInfo.Extension, "");  dllNames.Add(packetName);
+                string packetName = fileInfo.Name.Replace(fileInfo.Extension, ""); dllNames.Add(packetName);
                 //下载包
 
                 Task<bool> t = Task.Run(() => DownloadPackage(packetName, tempOutDir, source));
@@ -198,10 +238,10 @@ namespace NugetUpdate
                 string packetName = fileInfo.Name.Replace(fileInfo.Extension, ""); dllNames.Add(packetName);
                 //下载包
 
-             bool t =  DownloadPackage(packetName, tempOutDir, source);
+                bool t = DownloadPackage(packetName, tempOutDir, source);
                 tasks.Add(t);
             }
-           // Task.WaitAll(tasks.ToArray());
+            // Task.WaitAll(tasks.ToArray());
             return tasks.ToArray().All(t => t);
         }
         private static bool DownloadPackage(string packetName, string outDir = ".", string nugetServerUrl = "http://192.168.21.45:8080/v3/index.json")
@@ -246,6 +286,18 @@ namespace NugetUpdate
                 Console.ResetColor();
             }
             return output;
+        }
+
+        private static void DownloadFile(string httpAddress, string savePath)
+        {
+            string url = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
+            string fileName = "nuget111.exe";
+            savePath = Path.Combine(Environment.CurrentDirectory, fileName);
+
+            using (WebClient client = new WebClient())
+            {
+                client.DownloadFile(new Uri(url), savePath);
+            }
         }
     }
 }
