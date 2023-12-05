@@ -42,8 +42,8 @@ namespace NugetUpdate
                 Console.WriteLine("示例:");
                 Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o");
                 Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json");
-                Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json -source http://192.168.21.45:8080/v3/index.json");
-                Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o -source http://192.168.21.45:8080/v3/index.json -needDependency false");
+                Console.WriteLine("NugetUpdate.exe -name Newtonsoft.Json -source http://192.168.20.79:8080/v3/index.json");
+                Console.WriteLine("NugetUpdate.exe -dir .\\bin\\Debug\\tt -outDir .\\bin\\Debug\\o -source http://192.168.20.79:8080/v3/index.json -needDependency false");
 
                 return;
             }
@@ -52,7 +52,7 @@ namespace NugetUpdate
             Console.WriteLine("开始更新Nuget包");
             string dir = ".";
             string outDir = ".";
-            string source = "http://192.168.21.45:8080/v3/index.json";
+            string source = "http://192.168.20.79:8080/v3/index.json";
             string name = "";
             bool isNeedDependency = false;
             List<string> dllNames = new List<string>();
@@ -244,7 +244,7 @@ namespace NugetUpdate
             // Task.WaitAll(tasks.ToArray());
             return tasks.ToArray().All(t => t);
         }
-        private static bool DownloadPackage(string packetName, string outDir = ".", string nugetServerUrl = "http://192.168.21.45:8080/v3/index.json")
+        private static bool DownloadPackage(string packetName, string outDir = ".", string nugetServerUrl = "http://192.168.20.79:8080/v3/index.json")
         {
 
             string command = "nuget install " + packetName + " -Source " + nugetServerUrl + " -OutputDirectory " + outDir;
