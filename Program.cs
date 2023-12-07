@@ -106,9 +106,9 @@ namespace NugetUpdate
                     }
 
                     //获取文件夹下所有dll文件
-                    if (!DownloadDirsFile(dir, source, tempOutDir, dllNames))
+                    if (!DownloadDirsFileAsync(dir, source, tempOutDir, dllNames))
                     {
-                        Console.WriteLine("下载失败,按Enter继续");
+                        Console.WriteLine("有下载失败,按Enter继续复制已成功下载的");
                         Console.ReadLine();
                     }
                 }
